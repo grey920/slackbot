@@ -1,0 +1,77 @@
+package com.bolt.sample;
+
+import com.slack.api.bolt.App;
+import com.slack.api.bolt.servlet.SlackAppServlet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import javax.net.ssl.*;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
+
+@WebServlet( "/slack/events" ) // API mapping
+public class EventServlet extends SlackAppServlet {
+    private final Logger log = LoggerFactory.getLogger( EventServlet.class );
+
+    /**
+     * @Qualifier("hello") App app
+     * : config 내의 같은 App 타입 중 hello 라는 이름을 가진 Bean 을 주입
+     * @param app
+     */
+    public EventServlet( App app ) {
+        super( app );
+    }
+
+    @RequestMapping( "" )
+    public String verification(HttpServletRequest request, HttpServletResponse response ) {
+//        disableSslVerification();
+        log.error( "verification called!!!!!!! >>>>> {}", request.getAttribute("type"));
+
+        if ( "url_verification".equals( request.getAttribute("type") ) ) {
+            return "url_verification";
+        }
+        return "not url_verification event";
+    }
+
+
+    public void disableSslVerification(){
+        // TODO Auto-generated method stub
+        try
+        {
+            // Create a trust manager that does not validate certificate chains
+            TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
+
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+                public void checkClientTrusted(X509Certificate[] certs, String authType){
+                }
+                public void checkServerTrusted(X509Certificate[] certs, String authType){
+                }
+            }
+            };
+
+            // Install the all-trusting trust manager
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            // Create all-trusting host name verifier
+            HostnameVerifier allHostsValid = new HostnameVerifier() {
+                public boolean verify(String hostname, SSLSession session){
+                    return true;
+                }
+            };
+
+            // Install the all-trusting host verifier
+            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            e.printStackTrace();
+        }
+    }
+}
